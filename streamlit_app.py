@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -33,12 +34,16 @@ def get_price_data(symbol):
     for i in range(99):
         prices.append(prices[-1] + np.random.randn() * (vol / 50))
     
+    high = [p + abs(np.random.randn() * vol/100) for p in prices]
+    low = [p - abs(np.random.randn() * vol/100) for p in prices]
+    volume = [1000 + i*20 + np.random.randint(-200, 200) for i in range(100)]
+    
     return pd.DataFrame({
         'timestamp': dates,
         'close': prices,
-        'high': [p + abs(np.random.randn() * vol/100) for p in prices],
-        'low': [p - abs(np.random.randn() * vol/100) for p in prices],
-        'volume': [1000 + i*20 + np.random.randint(-200, 200) for i in range(100)]
+        'high': high,
+        'low': low,
+        'volume': volume
     })
 
 def detect_signal(df):
@@ -83,7 +88,7 @@ for pair in pairs:
     
     c1, c2, c3, c4 = st.columns([2, 1.5, 1, 1.5])
     with c1:
-        st.metric(pair, f"${price:.4f}", delta=f"{change:.2f}%")
+        st.metric(pair, f"${price:.2f}", delta=f"{change:.2f}%")
     with c2:
         if "BULLISH" in signal:
             st.success(signal)
@@ -102,16 +107,9 @@ for pair in pairs:
         st.info(f"📊 LOT: {lot_size:.2f}")
         st.caption(f"Strength: {total_strength}%")
     
-    fig = go.Figure(data=[go.Candlestick(
-        x=df['timestamp'].tail(50),
-        open=df['open'].tail(50),
-        high=df['high'].tail(50),
-        low=df['low'].tail(50),
-        close=df['close'].tail(50)
-    )])
-    fig.update_layout(height=200, margin=dict(l=0, r=0, t=20, b=0))
-    fig.update_xaxes(rangeslider_visible=False)
-    st.plotly_chart(fig, use_container_width=True)
+    # Simple line chart instead of candlestick to avoid errors
+    chart_df = df.tail(50)[['timestamp', 'close']]
+    st.line_chart(chart_df.set_index('timestamp'), height=200)
     st.divider()
 
 if auto:

@@ -98,3 +98,67 @@ for market in markets:
     st.info("Waiting for confirmation...")
 
     st.divider() 
+# ==========================
+# DXY COMPASS
+# ==========================
+
+st.divider()
+
+st.header("🧭 DXY MARKET COMPASS")
+
+dxy1, dxy2, dxy3 = st.columns(3)
+
+with dxy1:
+    st.metric("Trend", "WAIT")
+
+with dxy2:
+    st.metric("Bias", "Neutral")
+
+with dxy3:
+    st.metric("Strength", "0%")
+
+# ==========================
+# MARKET SCANNER
+# ==========================
+
+st.divider()
+
+st.header("📊 MARKET SCANNER")
+
+markets = [
+    "🥇 XAUUSD",
+    "₿ BTCUSD",
+    "💶 EURUSD",
+    "🇺🇸 US30",
+    "🇺🇸 SP500"
+]
+
+for market in markets:
+
+    st.subheader(market)
+
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+
+    with c1:
+        st.metric("Signal", "WAIT")
+
+    with c2:
+        st.metric("Confidence", "0%")
+
+    with c3:
+        st.metric("Entry", "--")
+
+    with c4:
+        st.metric("SL", "--")
+
+    with c5:
+        st.metric("TP", "--")
+
+    with c6:
+        st.metric("Trend", "--")
+
+    st.info("🔍 Omega X is waiting for confirmation.")
+
+    st.divider()
+
+st.success("🚀 Sekwaila Omega X v1.0 Running")

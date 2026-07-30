@@ -413,3 +413,147 @@ def signal(df):
         return "SELL"
 
     return "WAIT"
+# ======================================================
+# PART 3 - LIVE DASHBOARD ENGINE
+# ======================================================
+
+MARKETS = {
+    "XAUUSD":"Gold",
+    "BTCUSD":"Bitcoin",
+    "EURUSD":"Euro",
+    "US30":"Dow Jones",
+    "SP500":"S&P 500"
+}
+
+st.divider()
+
+st.header("📊 OMEGA X LIVE SCANNER")
+
+for symbol,name in MARKETS.items():
+
+    df = get_market_data(symbol)
+
+    sig = signal(df)
+
+    conf = confidence(df)
+
+    tr = trend(df)
+
+    price = round(df.Close.iloc[-1],2)
+
+    atr = round((df.High-df.Low).rolling(14).mean().iloc[-1],2)
+
+    if sig=="BUY":
+
+        entry = price
+
+        sl = round(price-atr*1.5,2)
+
+        tp1 = round(price+atr*2,2)
+
+        tp2 = round(price+atr*4,2)
+
+    elif sig=="SELL":
+
+        entry = price
+
+        sl = round(price+atr*1.5,2)
+
+        tp1 = round(price-atr*2,2)
+
+        tp2 = round(price-atr*4,2)
+
+    else:
+
+        entry="--"
+        sl="--"
+        tp1="--"
+        tp2="--"
+
+    st.subheader(f"{symbol} | {name}")
+
+    a,b,c,d,e,f = st.columns(6)
+
+    a.metric("Price",price)
+
+    b.metric("Signal",sig)
+
+    c.metric("Confidence",f"{conf}%")
+
+    d.metric("Trend",tr)
+
+    e.metric("ATR",atr)
+
+    f.metric("Risk",f"{risk}%")
+
+    g,h,i,j = st.columns(4)
+
+    g.metric("Entry",entry)
+
+    h.metric("SL",sl)
+
+    i.metric("TP1",tp1)
+
+    j.metric("TP2",tp2)
+
+    k,l,m,n,o,p = st.columns(6)
+
+    k.write("BOS")
+    k.success("YES" if bos(df) else "NO")
+
+    l.write("CHOCH")
+    l.success("YES" if choch(df) else "NO")
+
+    m.write("MSS")
+    m.success("YES" if mss(df) else "NO")
+
+    n.write("FVG")
+    n.success("YES" if fvg(df) else "NO")
+
+    o.write("ORDER BLOCK")
+    o.info(order_block(df))
+
+    p.write("LIQUIDITY")
+    p.info(liquidity(df))
+
+    fig = go.Figure()
+
+    fig.add_trace(
+
+        go.Candlestick(
+
+            open=df.Open,
+
+            high=df.High,
+
+            low=df.Low,
+
+            close=df.Close
+
+        )
+
+    )
+
+    fig.update_layout(
+
+        template="plotly_dark",
+
+        height=350,
+
+        margin=dict(l=5,r=5,t=20,b=5),
+
+        xaxis_rangeslider_visible=False
+
+    )
+
+    st.plotly_chart(
+
+        fig,
+
+        use_container_width=True
+
+    )
+
+    st.divider()
+
+st.success("🚀 Omega X Analysis Complete")

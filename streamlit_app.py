@@ -1,4 +1,6 @@
 import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
 from datetime import datetime
 
 st.set_page_config(
@@ -9,156 +11,405 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-.main{
-    background-color:#0e1117;
+
+html,body,[class*="css"]{
+background:#0E1117;
+color:white;
 }
-h1,h2,h3{
-    color:white;
+
+.block-container{
+padding-top:1rem;
 }
+
+.metric{
+background:#161B22;
+padding:15px;
+border-radius:12px;
+}
+
+hr{
+border:1px solid #222;
+}
+
 </style>
-""", unsafe_allow_html=True)
+""",unsafe_allow_html=True)
 
 st.title("📈 SEKWAILA OMEGA X")
-st.caption("AI Smart Money Trading Assistant")
+st.caption("Institutional Smart Money Trading Assistant")
 
-st.write(f"🕒 {datetime.now().strftime('%d %B %Y  %H:%M:%S')}")
+st.write(
+datetime.now().strftime(
+"%d %B %Y | %H:%M:%S"
+)
+)
 
-st.divider()
+# ======================================
+# SIDEBAR
+# ======================================
 
 st.sidebar.title("⚙️ CONTROL PANEL")
 
-pair = st.sidebar.selectbox(
-    "Select Market",
-    [
-        "XAUUSD",
-        "BTCUSD",
-        "EURUSD",
-        "US30",
-        "SP500"
-    ]
+ACCOUNT=st.sidebar.number_input(
+"Account Balance",
+100,
+1000000,
+1000
 )
 
-timeframe = st.sidebar.selectbox(
-    "Timeframe",
-    [
-        "M5",
-        "M15",
-        "H1",
-        "H4",
-        "D1"
-    ]
+RISK=st.sidebar.slider(
+"Risk %",
+0.5,
+5.0,
+1.0
 )
 
-risk = st.sidebar.slider(
-    "Risk %",
-    0.5,
-    5.0,
-    1.0
+TIMEFRAME=st.sidebar.selectbox(
+"Timeframe",
+[
+"M5",
+"M15",
+"M30",
+"H1",
+"H4",
+"D1"
+]
 )
 
-st.sidebar.success("Omega X Online")
+AUTO_REFRESH=st.sidebar.checkbox(
+"Auto Refresh",
+True
+)
+
+st.sidebar.success("OMEGA X ONLINE")
+
+# ======================================
+# DXY
+# ======================================
+
+st.header("🧭 DXY COMPASS")
+
+d1,d2,d3,d4=st.columns(4)
+
+d1.metric(
+"Trend",
+"WAIT"
+)
+
+d2.metric(
+"Bias",
+"Neutral"
+)
+
+d3.metric(
+"Strength",
+"0%"
+)
+
+d4.metric(
+"Session",
+"Waiting"
+)
+
 st.divider()
 
-st.header("🧭 DXY MARKET COMPASS")
+# ======================================
+# WATCHLIST
+# ======================================
 
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("DXY Trend", "WAIT")
-
-with col2:
-    st.metric("Bias", "Neutral")
-
-with col3:
-    st.metric("Strength", "0%")
-   st.divider()
-
-st.header("📊 MARKET SCANNER")
-
-markets = [
-    "🥇 XAUUSD",
-    "₿ BTCUSD",
-    "💶 EURUSD",
-    "🇺🇸 US30",
-    "🇺🇸 SP500"
+MARKETS=[
+"XAUUSD",
+"BTCUSD",
+"EURUSD",
+"US30",
+"SP500"
 ]
 
-for market in markets:
+for market in MARKETS:
 
     st.subheader(market)
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    a,b,c,d,e,f=st.columns(6)
 
-    c1.metric("Signal", "WAIT")
-    c2.metric("Confidence", "0%")
-    c3.metric("Entry", "--")
-    c4.metric("SL", "--")
-    c5.metric("TP", "--")
+    a.metric(
+    "Signal",
+    "WAIT"
+    )
 
-    st.info("Waiting for confirmation...")
+    b.metric(
+    "Confidence",
+    "0%"
+    )
 
-    st.divider() 
-# ==========================
-# DXY COMPASS
-# ==========================
+    c.metric(
+    "Entry",
+    "--"
+    )
 
-st.divider()
+    d.metric(
+    "SL",
+    "--"
+    )
 
-st.header("🧭 DXY MARKET COMPASS")
+    e.metric(
+    "TP",
+    "--"
+    )
 
-dxy1, dxy2, dxy3 = st.columns(3)
+    f.metric(
+    "Trend",
+    "--"
+    )
 
-with dxy1:
-    st.metric("Trend", "WAIT")
+    fig=go.Figure()
 
-with dxy2:
-    st.metric("Bias", "Neutral")
+    fig.update_layout(
 
-with dxy3:
-    st.metric("Strength", "0%")
+    template="plotly_dark",
 
-# ==========================
-# MARKET SCANNER
-# ==========================
+    height=250,
 
-st.divider()
+    margin=dict(
+    l=0,
+    r=0,
+    t=20,
+    b=0
+    ),
 
-st.header("📊 MARKET SCANNER")
+    xaxis_title="",
 
-markets = [
-    "🥇 XAUUSD",
-    "₿ BTCUSD",
-    "💶 EURUSD",
-    "🇺🇸 US30",
-    "🇺🇸 SP500"
-]
+    yaxis_title=""
 
-for market in markets:
+    )
 
-    st.subheader(market)
-
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-
-    with c1:
-        st.metric("Signal", "WAIT")
-
-    with c2:
-        st.metric("Confidence", "0%")
-
-    with c3:
-        st.metric("Entry", "--")
-
-    with c4:
-        st.metric("SL", "--")
-
-    with c5:
-        st.metric("TP", "--")
-
-    with c6:
-        st.metric("Trend", "--")
-
-    st.info("🔍 Omega X is waiting for confirmation.")
+    st.plotly_chart(
+    fig,
+    use_container_width=True
+    )
 
     st.divider()
 
-st.success("🚀 Sekwaila Omega X v1.0 Running")
+# ======================================
+# SIGNAL HISTORY
+# ======================================
+
+st.header("📜 SIGNAL HISTORY")
+
+history=pd.DataFrame({
+
+"Time":[],
+
+"Market":[],
+
+"Signal":[],
+
+"Entry":[],
+
+"SL":[],
+
+"TP":[],
+
+"Confidence":[]
+
+})
+
+st.dataframe(
+history,
+use_container_width=True,
+hide_index=True
+)
+
+st.divider()
+
+st.success("Omega X Engine Loaded")
+# ======================================================
+# PART 2 - OMEGA X ANALYSIS ENGINE
+# ======================================================
+
+import numpy as np
+
+# ----------------------------
+# DEMO MARKET DATA
+# (Will be replaced with live data)
+# ----------------------------
+
+def get_market_data(symbol):
+
+    np.random.seed(abs(hash(symbol)) % 1000)
+
+    price = np.cumsum(np.random.randn(300)) + 100
+
+    df = pd.DataFrame()
+
+    df["Open"] = price
+    df["High"] = price + np.random.rand(300)
+    df["Low"] = price - np.random.rand(300)
+    df["Close"] = price + np.random.randn(300)*0.2
+
+    return df
+
+
+# ----------------------------
+# TREND ENGINE
+# ----------------------------
+
+def trend(df):
+
+    sma20 = df.Close.rolling(20).mean()
+
+    sma50 = df.Close.rolling(50).mean()
+
+    if sma20.iloc[-1] > sma50.iloc[-1]:
+        return "Bullish"
+
+    elif sma20.iloc[-1] < sma50.iloc[-1]:
+        return "Bearish"
+
+    return "Neutral"
+
+
+# ----------------------------
+# BOS
+# ----------------------------
+
+def bos(df):
+
+    recent_high = df.High.tail(20).max()
+
+    if df.Close.iloc[-1] > recent_high:
+
+        return True
+
+    return False
+
+
+# ----------------------------
+# CHOCH
+# ----------------------------
+
+def choch(df):
+
+    last = df.Close.tail(10)
+
+    if last.iloc[-1] > last.mean():
+
+        return True
+
+    return False
+
+
+# ----------------------------
+# MSS
+# ----------------------------
+
+def mss(df):
+
+    last = df.Close.tail(5)
+
+    if last.is_monotonic_increasing:
+
+        return True
+
+    if last.is_monotonic_decreasing:
+
+        return True
+
+    return False
+
+
+# ----------------------------
+# FAIR VALUE GAP
+# ----------------------------
+
+def fvg(df):
+
+    gap = abs(df.High.iloc[-2]-df.Low.iloc[-1])
+
+    return gap > df.Close.std()
+
+
+# ----------------------------
+# ORDER BLOCK
+# ----------------------------
+
+def order_block(df):
+
+    candle = df.iloc[-2]
+
+    if candle.Close > candle.Open:
+
+        return "Bullish"
+
+    return "Bearish"
+
+
+# ----------------------------
+# LIQUIDITY SWEEP
+# ----------------------------
+
+def liquidity(df):
+
+    high = df.High.tail(15).max()
+
+    low = df.Low.tail(15).min()
+
+    close = df.Close.iloc[-1]
+
+    if close > high:
+
+        return "Buy Side"
+
+    elif close < low:
+
+        return "Sell Side"
+
+    return "None"
+
+
+# ----------------------------
+# AI CONFIDENCE
+# ----------------------------
+
+def confidence(df):
+
+    score = 0
+
+    if bos(df):
+        score += 20
+
+    if choch(df):
+        score += 20
+
+    if mss(df):
+        score += 15
+
+    if fvg(df):
+        score += 15
+
+    if order_block(df) == "Bullish":
+        score += 15
+
+    if liquidity(df) != "None":
+        score += 15
+
+    return min(score,100)
+
+
+# ----------------------------
+# SIGNAL
+# ----------------------------
+
+def signal(df):
+
+    score = confidence(df)
+
+    t = trend(df)
+
+    if score >= 80 and t=="Bullish":
+
+        return "BUY"
+
+    elif score >=80 and t=="Bearish":
+
+        return "SELL"
+
+    return "WAIT"

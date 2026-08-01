@@ -1,0 +1,33 @@
+"""
+SEKWAILA OMEGA X
+Configuration
+"""
+
+APP_NAME = "SEKWAILA OMEGA X"
+
+VERSION = "3.0"
+
+SYMBOLS = [
+    "BTCUSD",
+    "XAUUSD",
+    "EURUSD",
+    "US30",
+]
+
+TIMEFRAMES = [
+    "15m",
+    "1H",
+    "4H",
+]
+
+SCAN_INTERVAL = 60
+
+ALERT_CONFIDENCE = 90
+
+TWELVEDATA_API_KEY = ""
+
+TELEGRAM_BOT_TOKEN = ""
+
+TELEGRAM_CHAT_ID = ""
+
+DATABASE_URL = ""

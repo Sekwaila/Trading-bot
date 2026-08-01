@@ -15,7 +15,7 @@ SYMBOL_MAP = {
     "BTCUSD": "BTC/USD",
     "XAUUSD": "XAU/USD",
     "EURUSD": "EUR/USD",
-    "US30": "DJI",
+    "US30": "^DJI"
 }
 
 

@@ -132,7 +132,18 @@ for symbol in SYMBOLS:
         st.info(f"{symbol}: Waiting for more candles")
 
         continue
-
+# Save signal to database
+db.save_signal(
+    symbol=symbol,
+    signal=signal["signal"],
+    confidence=signal["confidence"],
+    entry=signal["entry"],
+    stop_loss=signal["sl"],
+    tp1=signal["tp1"],
+    tp2=signal["tp2"],
+    tp3=signal["tp3"],
+    timeframe="15min"
+)
     c1, c2, c3 = st.columns(3)
 
     c1.metric(

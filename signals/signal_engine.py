@@ -3,8 +3,10 @@ SEKWAILA OMEGA X
 Signal Engine V7
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
+from signals.market_structure import market_structure
 
 
 class SignalEngine:
@@ -63,26 +65,12 @@ class SignalEngine:
         return tr.rolling(period).mean()
 
     # ==========================
-    # Market Structure
-    # ==========================
-
-    def market_structure(self, df):
-
-        highs = df["high"].tail(20)
-        lows = df["low"].tail(20)
-
-        return {
-            "last_high": float(highs.max()),
-            "last_low": float(lows.min()),
-        }
-
-    # ==========================
     # Signal Generator
     # ==========================
 
     def generate_signal(self, df):
 
-        if df is None or len(df) < 200:
+        if df is None or df.empty or len(df) < 200:
             return None
 
         df = df.copy()
@@ -94,22 +82,37 @@ class SignalEngine:
         df["rsi"] = self.rsi(df["close"])
         df["atr"] = self.atr(df)
 
-        structure = self.market_structure(df)
+        structure = market_structure.analyze(df)
+
+        if structure is None:
+            return None
 
         last = df.iloc[-1]
 
         price = float(last["close"])
+
         ema20 = float(last["ema20"])
         ema50 = float(last["ema50"])
         ema200 = float(last["ema200"])
 
-        rsi = 50 if pd.isna(last["rsi"]) else float(last["rsi"])
-        atr = price * 0.002 if pd.isna(last["atr"]) else float(last["atr"])
+        rsi = (
+            50
+            if pd.isna(last["rsi"])
+            else float(last["rsi"])
+        )
+
+        atr = (
+            price * 0.002
+            if pd.isna(last["atr"])
+            else float(last["atr"])
+        )
 
         buy_score = 0
         sell_score = 0
 
+        # ==========================
         # Trend
+        # ==========================
 
         if ema20 > ema50:
             buy_score += 20
@@ -121,14 +124,18 @@ class SignalEngine:
         else:
             sell_score += 25
 
+        # ==========================
         # Momentum
+        # ==========================
 
         if price > ema20:
             buy_score += 15
         else:
             sell_score += 15
 
+        # ==========================
         # RSI
+        # ==========================
 
         if rsi > 60:
             buy_score += 20
@@ -140,15 +147,19 @@ class SignalEngine:
             buy_score += 10
             sell_score += 10
 
-        # Market Structure
+        # ==========================
+        # Smart Money BOS
+        # ==========================
 
-        if price > structure["last_high"]:
-            buy_score += 20
+        if structure["bullish_bos"]:
+            buy_score += 25
 
-        if price < structure["last_low"]:
-            sell_score += 20
+        if structure["bearish_bos"]:
+            sell_score += 25
 
+        # ==========================
         # Final Decision
+        # ==========================
 
         if buy_score >= sell_score:
 

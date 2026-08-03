@@ -190,6 +190,7 @@ class SignalEngine:
         else:
             buy_score += 10
             sell_score += 10
+            
         # =====================================
         # Break Of Structure
         # =====================================

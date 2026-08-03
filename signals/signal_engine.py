@@ -25,7 +25,6 @@ class SignalEngine:
         return 100 - (100 / (1 + rs))
 
     def atr(self, df, period=14):
-
         high = df["high"]
         low = df["low"]
         close = df["close"]
@@ -62,11 +61,23 @@ class SignalEngine:
         rsi = 50.0 if pd.isna(last["rsi"]) else float(last["rsi"])
         atr = price * 0.002 if pd.isna(last["atr"]) else float(last["atr"])
 
-        # Trend Filter
-        if ema50 > ema200 and rsi > 55:
+        # Support & Resistance
+        recent_high = df["high"].tail(20).max()
+        recent_low = df["low"].tail(20).min()
+
+        # Trend + RSI + Support/Resistance Filter
+        if (
+            ema50 > ema200
+            and rsi > 55
+            and price < recent_high - atr
+        ):
             signal = "BUY"
 
-        elif ema50 < ema200 and rsi < 45:
+        elif (
+            ema50 < ema200
+            and rsi < 45
+            and price > recent_low + atr
+        ):
             signal = "SELL"
 
         else:
@@ -75,10 +86,8 @@ class SignalEngine:
         # Dynamic Confidence
         confidence = 60
 
-        # EMA Trend
         confidence += 15
 
-        # RSI Confirmation
         if signal == "BUY":
             if rsi >= 70:
                 confidence += 5
@@ -94,7 +103,6 @@ class SignalEngine:
             elif rsi <= 45:
                 confidence += 15
 
-        # Strong Trend Bonus
         gap = abs(ema50 - ema200)
 
         if gap > atr:

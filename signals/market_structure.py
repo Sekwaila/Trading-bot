@@ -1,8 +1,17 @@
-    # ==========================
-    # Smart Money Market Structure
-    # ==========================
+"""
+SEKWAILA OMEGA X V7
+Smart Money Market Structure
+"""
 
-    def market_structure(self, df, lookback=3):
+import pandas as pd
+
+
+class MarketStructure:
+
+    def analyze(self, df, lookback=3):
+
+        if df is None or df.empty:
+            return None
 
         df = df.copy()
 
@@ -36,9 +45,27 @@
         if not swing_lows.empty:
             last_low = float(swing_lows.iloc[-1]["low"])
 
+        price = float(df.iloc[-1]["close"])
+
+        bullish_bos = (
+            last_high is not None
+            and price > last_high
+        )
+
+        bearish_bos = (
+            last_low is not None
+            and price < last_low
+        )
+
         return {
+            "price": price,
             "last_high": last_high,
             "last_low": last_low,
+            "bullish_bos": bullish_bos,
+            "bearish_bos": bearish_bos,
             "swing_highs": swing_highs,
             "swing_lows": swing_lows,
         }
+
+
+market_structure = MarketStructure()

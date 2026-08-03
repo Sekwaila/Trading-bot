@@ -62,7 +62,15 @@ class SignalEngine:
         rsi = 50.0 if pd.isna(last["rsi"]) else float(last["rsi"])
         atr = price * 0.002 if pd.isna(last["atr"]) else float(last["atr"])
 
-        signal = "BUY" if ema50 > ema200 else "SELL"
+       # Strong trend confirmation
+if ema50 > ema200 and rsi > 55:
+    signal = "BUY"
+
+elif ema50 < ema200 and rsi < 45:
+    signal = "SELL"
+
+else:
+    return None 
 
         confidence = 70
 

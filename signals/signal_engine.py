@@ -62,18 +62,47 @@ class SignalEngine:
         rsi = 50.0 if pd.isna(last["rsi"]) else float(last["rsi"])
         atr = price * 0.002 if pd.isna(last["atr"]) else float(last["atr"])
 
-       # Strong trend confirmation
-if ema50 > ema200 and rsi > 55:
-    signal = "BUY"
+        # Trend Filter
+        if ema50 > ema200 and rsi > 55:
+            signal = "BUY"
 
-elif ema50 < ema200 and rsi < 45:
-    signal = "SELL"
+        elif ema50 < ema200 and rsi < 45:
+            signal = "SELL"
 
-else:
-    return None 
+        else:
+            return None
 
-        confidence = 70
+        # Dynamic Confidence
+        confidence = 60
 
+        # EMA Trend
+        confidence += 15
+
+        # RSI Confirmation
+        if signal == "BUY":
+            if rsi >= 70:
+                confidence += 5
+            elif rsi >= 60:
+                confidence += 10
+            elif rsi >= 55:
+                confidence += 15
+        else:
+            if rsi <= 30:
+                confidence += 5
+            elif rsi <= 40:
+                confidence += 10
+            elif rsi <= 45:
+                confidence += 15
+
+        # Strong Trend Bonus
+        gap = abs(ema50 - ema200)
+
+        if gap > atr:
+            confidence += 10
+
+        confidence = min(confidence, 95)
+
+        # Targets
         if signal == "BUY":
             sl = price - atr
             tp1 = price + atr

@@ -1,9 +1,10 @@
 """
 SEKWAILA OMEGA X
-Signal Engine
+Signal Engine v7
 """
 
 import pandas as pd
+import numpy as np
 
 
 class SignalEngine:
@@ -14,17 +15,18 @@ class SignalEngine:
     def rsi(self, series, period=14):
         delta = series.diff()
 
-        gain = delta.where(delta > 0, 0.0)
-        loss = -delta.where(delta < 0, 0.0)
+        gain = delta.clip(lower=0)
+        loss = -delta.clip(upper=0)
 
-        avg_gain = gain.rolling(period).mean()
-        avg_loss = loss.rolling(period).mean()
+        avg_gain = gain.ewm(alpha=1 / period, adjust=False).mean()
+        avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
 
-        rs = avg_gain / avg_loss.replace(0, 0.000001)
+        rs = avg_gain / avg_loss.replace(0, np.nan)
 
         return 100 - (100 / (1 + rs))
 
     def atr(self, df, period=14):
+
         high = df["high"]
         low = df["low"]
         close = df["close"]
@@ -47,80 +49,83 @@ class SignalEngine:
 
         df = df.copy()
 
+        df["ema20"] = self.ema(df["close"], 20)
         df["ema50"] = self.ema(df["close"], 50)
         df["ema200"] = self.ema(df["close"], 200)
+
         df["rsi"] = self.rsi(df["close"])
         df["atr"] = self.atr(df)
 
         last = df.iloc[-1]
 
         price = float(last["close"])
+
+        ema20 = float(last["ema20"])
         ema50 = float(last["ema50"])
         ema200 = float(last["ema200"])
 
-        rsi = 50.0 if pd.isna(last["rsi"]) else float(last["rsi"])
+        rsi = 50 if pd.isna(last["rsi"]) else float(last["rsi"])
         atr = price * 0.002 if pd.isna(last["atr"]) else float(last["atr"])
 
-        # Support & Resistance
-        recent_high = df["high"].tail(20).max()
-        recent_low = df["low"].tail(20).min()
+        buy_score = 0
+        sell_score = 0
 
-        # Trend + RSI + Support/Resistance Filter
-        if (
-            ema50 > ema200
-            and rsi > 55
-            and price < recent_high - atr
-        ):
-            signal = "BUY"
-
-        elif (
-            ema50 < ema200
-            and rsi < 45
-            and price > recent_low + atr
-        ):
-            signal = "SELL"
-
+        # Trend
+        if ema20 > ema50:
+            buy_score += 20
         else:
-            return None
+            sell_score += 20
 
-        # Dynamic Confidence
-        confidence = 60
-
-        confidence += 15
-
-        if signal == "BUY":
-            if rsi >= 70:
-                confidence += 5
-            elif rsi >= 60:
-                confidence += 10
-            elif rsi >= 55:
-                confidence += 15
+        if ema50 > ema200:
+            buy_score += 30
         else:
-            if rsi <= 30:
-                confidence += 5
-            elif rsi <= 40:
-                confidence += 10
-            elif rsi <= 45:
-                confidence += 15
+            sell_score += 30
 
+        # RSI
+        if rsi >= 60:
+            buy_score += 20
+        elif rsi <= 40:
+            sell_score += 20
+        else:
+            buy_score += 10
+            sell_score += 10
+
+        # Momentum
+        if price > ema20:
+            buy_score += 15
+        else:
+            sell_score += 15
+
+        # EMA Gap
         gap = abs(ema50 - ema200)
 
         if gap > atr:
-            confidence += 10
+            if ema50 > ema200:
+                buy_score += 15
+            else:
+                sell_score += 15
 
-        confidence = min(confidence, 95)
+        if buy_score >= sell_score:
+            signal = "BUY"
+            confidence = min(buy_score, 95)
 
-        # Targets
-        if signal == "BUY":
             sl = price - atr
             tp1 = price + atr
             tp2 = price + atr * 2
             tp3 = price + atr * 3
+
         else:
+            signal = "SELL"
+            confidence = min(sell_score, 95)
+
             sl = price + atr
             tp1 = price - atr
             tp2 = price - atr * 2
             tp3 = price - atr * 3
+
+        # Ignore weak setups
+        if confidence < 60:
+            return None
 
         return {
             "signal": signal,

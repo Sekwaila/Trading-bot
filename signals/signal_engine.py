@@ -1,6 +1,6 @@
 """
 SEKWAILA OMEGA X
-Signal Engine v7
+Signal Engine V7
 """
 
 import pandas as pd
@@ -9,21 +9,41 @@ import numpy as np
 
 class SignalEngine:
 
+    # ==========================
+    # EMA
+    # ==========================
+
     def ema(self, series, period):
         return series.ewm(span=period, adjust=False).mean()
 
+    # ==========================
+    # RSI
+    # ==========================
+
     def rsi(self, series, period=14):
+
         delta = series.diff()
 
         gain = delta.clip(lower=0)
         loss = -delta.clip(upper=0)
 
-        avg_gain = gain.ewm(alpha=1 / period, adjust=False).mean()
-        avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
+        avg_gain = gain.ewm(
+            alpha=1 / period,
+            adjust=False,
+        ).mean()
+
+        avg_loss = loss.ewm(
+            alpha=1 / period,
+            adjust=False,
+        ).mean()
 
         rs = avg_gain / avg_loss.replace(0, np.nan)
 
         return 100 - (100 / (1 + rs))
+
+    # ==========================
+    # ATR
+    # ==========================
 
     def atr(self, df, period=14):
 
@@ -42,9 +62,27 @@ class SignalEngine:
 
         return tr.rolling(period).mean()
 
+    # ==========================
+    # Market Structure
+    # ==========================
+
+    def market_structure(self, df):
+
+        highs = df["high"].tail(20)
+        lows = df["low"].tail(20)
+
+        return {
+            "last_high": float(highs.max()),
+            "last_low": float(lows.min()),
+        }
+
+    # ==========================
+    # Signal Generator
+    # ==========================
+
     def generate_signal(self, df):
 
-        if df is None or df.empty or len(df) < 50:
+        if df is None or len(df) < 200:
             return None
 
         df = df.copy()
@@ -56,10 +94,11 @@ class SignalEngine:
         df["rsi"] = self.rsi(df["close"])
         df["atr"] = self.atr(df)
 
+        structure = self.market_structure(df)
+
         last = df.iloc[-1]
 
         price = float(last["close"])
-
         ema20 = float(last["ema20"])
         ema50 = float(last["ema50"])
         ema200 = float(last["ema200"])
@@ -71,41 +110,48 @@ class SignalEngine:
         sell_score = 0
 
         # Trend
+
         if ema20 > ema50:
             buy_score += 20
         else:
             sell_score += 20
 
         if ema50 > ema200:
-            buy_score += 30
+            buy_score += 25
         else:
-            sell_score += 30
-
-        # RSI
-        if rsi >= 60:
-            buy_score += 20
-        elif rsi <= 40:
-            sell_score += 20
-        else:
-            buy_score += 10
-            sell_score += 10
+            sell_score += 25
 
         # Momentum
+
         if price > ema20:
             buy_score += 15
         else:
             sell_score += 15
 
-        # EMA Gap
-        gap = abs(ema50 - ema200)
+        # RSI
 
-        if gap > atr:
-            if ema50 > ema200:
-                buy_score += 15
-            else:
-                sell_score += 15
+        if rsi > 60:
+            buy_score += 20
+
+        elif rsi < 40:
+            sell_score += 20
+
+        else:
+            buy_score += 10
+            sell_score += 10
+
+        # Market Structure
+
+        if price > structure["last_high"]:
+            buy_score += 20
+
+        if price < structure["last_low"]:
+            sell_score += 20
+
+        # Final Decision
 
         if buy_score >= sell_score:
+
             signal = "BUY"
             confidence = min(buy_score, 95)
 
@@ -115,6 +161,7 @@ class SignalEngine:
             tp3 = price + atr * 3
 
         else:
+
             signal = "SELL"
             confidence = min(sell_score, 95)
 
@@ -123,7 +170,6 @@ class SignalEngine:
             tp2 = price - atr * 2
             tp3 = price - atr * 3
 
-        # Ignore weak setups
         if confidence < 60:
             return None
 

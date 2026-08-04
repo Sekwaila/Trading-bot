@@ -96,7 +96,7 @@ def get_all_prices():
 def get_candles(
     symbol,
     interval="15min",
-    outputsize=200,
+    outputsize=300,
 ):
 
     key = f"{symbol}:{interval}"

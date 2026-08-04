@@ -105,7 +105,7 @@ class SignalEngine:
 
     def generate_signal(self, df):
 
-        if df is None or df.empty or len(df) < 201:
+        if df is None or df.empty or len(df) < 200:
             return None
 
         df = df.copy()

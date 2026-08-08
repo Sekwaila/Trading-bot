@@ -1,5 +1,8 @@
 import pandas as pd
-from typing import Optional, Tuple
+from .order_blocks import find_order_block
 
-def detect_mitigation_block(df_closed: pd.DataFrame) -> Optional[Tuple[float, float]]:
-    return None  # Reserved placeholder for mitigation blocks without structural sweep
+def detect_mitigation_block(df: pd.DataFrame, bias: str):
+    ob_type, zone, mit, inv = find_order_block(df, bias)
+    if mit and not inv:
+        return f"{bias}_MITIGATION_BLOCK", zone
+    return "NONE", None

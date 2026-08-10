@@ -1,6 +1,7 @@
-streamlit
-streamlit-autorefresh
-pandas
-numpy
-yfinance
-plotly
+streamlit==1.61.1
+streamlit-autorefresh==1.0.1
+pandas==3.0.5
+numpy==2.5.2
+yfinance==1.5.2
+plotly==6.9.0
+requests

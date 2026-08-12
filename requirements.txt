@@ -1,8 +1,0 @@
-streamlit
-streamlit-autorefresh
-pandas
-numpy
-yfinance
-plotly
-requests
-metaapi-cloud-sdk>=5.0.0

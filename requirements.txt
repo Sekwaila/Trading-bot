@@ -1,3 +1,4 @@
+# pip requirements
 streamlit
 streamlit-autorefresh
 pandas
@@ -6,3 +7,5 @@ yfinance
 plotly
 websockets
 requests
+openai
+python-dotenv

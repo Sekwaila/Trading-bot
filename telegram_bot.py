@@ -28,6 +28,15 @@ def send_telegram_message(token: str, chat_id: str, message: str) -> tuple[bool,
         return False, f"Connection failure: {exc}"
 
 
+def _safe_num(value, default=0.0):
+    try:
+        if value is None:
+            return float(default)
+        return float(value)
+    except Exception:
+        return float(default)
+
+
 def format_signal_message(symbol: str, result: dict) -> str:
     """Build the alert text from an engine result. Same formatting used by
     the dashboard's test button and the background worker, so what you see
@@ -37,21 +46,29 @@ def format_signal_message(symbol: str, result: dict) -> str:
         return f"⚠️ {symbol}: DATA UNAVAILABLE — {reason}"
 
     level = classify_signal(result)
+    score = _safe_num(result.get("score"), 0.0)
+    entry = _safe_num(result.get("entry"), 0.0)
+    stop = _safe_num(result.get("stop"), 0.0)
+    tp1 = _safe_num(result.get("tp1"), 0.0)
+    tp2 = _safe_num(result.get("tp2"), 0.0)
+    tp3 = _safe_num(result.get("tp3"), 0.0)
+    rr = _safe_num(result.get("rr"), 0.0)
+
     lines = [
         "👑 SEKWAILA OMEGA X ALERT",
         "",
         f"Asset: {symbol}",
         f"Signal: {level}",
-        f"Score: {result.get('score', 0):.1f}/100",
+        f"Score: {score:.1f}/100",
         f"Grade: {result.get('grade', '-')}",
     ]
     if result.get("bias") in ("BUY", "SELL"):
         lines += [
-            f"Entry: {result.get('entry', 0):.4f}",
-            f"Stop: {result.get('stop', 0):.4f}",
-            f"TP1: {result.get('tp1', 0):.4f}",
-            f"TP2: {result.get('tp2', 0):.4f}",
-            f"TP3: {result.get('tp3', 0):.4f}",
-            f"R:R: {result.get('rr', 0):.2f}",
+            f"Entry: {entry:.4f}",
+            f"Stop: {stop:.4f}",
+            f"TP1: {tp1:.4f}",
+            f"TP2: {tp2:.4f}",
+            f"TP3: {tp3:.4f}",
+            f"R:R: {rr:.2f}",
         ]
     return "\n".join(lines)

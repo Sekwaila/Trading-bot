@@ -14,7 +14,15 @@ from config import (
     ASSETS, DEFAULT_MIN_TF_AGREEMENT, DEFAULT_MIN_SCORE, DEFAULT_MIN_RR,
     TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, WORKER_POLL_SECONDS,
 )
-from signals.signal_engine import generate_omega_signal
+# Import engine lazily with a safe fallback so a failing engine import doesn't
+# prevent the whole Streamlit app from starting. This lets us show an
+# informative message in the UI instead of crashing the process during import.
+try:
+    from signals.signal_engine import generate_omega_signal
+except Exception as _engine_exc:
+    generate_omega_signal = None
+    _engine_exc = _engine_exc
+
 import news
 import ai_provider
 from settings_store import load_settings
@@ -29,7 +37,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Helper converters
-
 def num(v, default=0.0):
     try:
         return float(v)
@@ -57,10 +64,12 @@ st.caption(f"Selected: {selected} — ticker: {ASSETS.get(selected, 'N/A')}")
 
 with st.spinner("Evaluating signal..."):
     try:
+        if generate_omega_signal is None:
+            # Lazy import failed earlier — show an informative result instead of crashing.
+            raise ImportError(f"Engine import failed: {_engine_exc}")
         result = generate_omega_signal(selected, ASSETS.get(selected), min_tf=min_tf, min_score=min_score, min_rr=min_rr)
     except Exception as exc:
-        st.error(f"Engine error: {exc}")
-        st.stop()
+        result = {"ok": False, "symbol": selected, "ticker": ASSETS.get(selected), "reason": f"Engine unavailable: {exc}", "data_integrity": {}}
 
 if not result.get("ok"):
     st.error(f"Engine could not evaluate {selected}: {result.get('reason','Unknown')}")
@@ -97,7 +106,10 @@ with st.expander("🧠 AI Narrator"):
     ai_enabled = settings.get("ai", {}).get("enabled", False)
     if not ai_enabled:
         st.info("AI Narrator is disabled in settings.")
-        st.code(ai_provider._local_summarize_signal(result))
+        try:
+            st.code(ai_provider._local_summarize_signal(result))
+        except Exception:
+            st.write("(no local summary available)")
     else:
         if st.button("Generate AI Narrative"):
             with st.spinner("Calling AI provider..."):

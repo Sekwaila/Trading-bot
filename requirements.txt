@@ -1,0 +1,11 @@
+streamlit
+streamlit-autorefresh
+pandas
+numpy
+yfinance
+plotly
+websockets
+requests
+openai
+python-dotenv
+python-deriv-api

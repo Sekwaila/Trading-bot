@@ -180,7 +180,7 @@ def _yf_fetch_candles_for_symbol(symbol):
             if d.empty or len(d) < MINIMUM_DATA_ROWS:
                 logger.warning("yfinance insufficient data for %s %s: %s rows", symbol, tf_label, len(d))
                 tf_data[tf_label] = None
-n                integrity[tf_label] = f"UNAVAILABLE (yfinance insufficient data: {len(d)} rows)"
+                integrity[tf_label] = f"UNAVAILABLE (yfinance insufficient data: {len(d)} rows)"
             else:
                 tf_data[tf_label] = d
                 integrity[tf_label] = "LIVE (yfinance)"

@@ -1,30 +1,48 @@
 """
-SEKWAILA OMEGA X — TELEGRAM ALERT WORKER
+SEKWAILA OMEGA X — TELEGRAM ALERT WORKER (enhanced)
 
-Runs continuously, independent of the Streamlit dashboard, and pushes a
-Telegram alert whenever a NEW BUY/SELL signal appears on any tracked asset.
-This worker now uses the local sqlite persistence to deduplicate alerts and
-logs every generated signal for audit.
+- Uses send_engine_signal for richer messaging (chart links, MarkdownV2, retries)
+- Reads telegram cooldown from settings_store on each scan so changes in the UI take effect
+  without restarting the worker.
+- Graceful shutdown handling (SIGTERM) so the process can be stopped cleanly in containers.
 """
 
 import time
 import traceback
+import signal
+import threading
 
 from config import (
     ASSETS, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, WORKER_POLL_SECONDS,
-    DEFAULT_MIN_TF_AGREEMENT, DEFAULT_MIN_SCORE, DEFAULT_MIN_RR,
+    DEFAULT_MIN_TF_AGREEMENT, DEFAULT_MIN_SCORE, DEFAULT_MIN_RR, ALERT_COOLDOWN_MINUTES,
 )
 from signals.signal_engine import generate_omega_signal
 from logger import get_logger
 
 # Use central modules for persistence and Telegram handling
 from database import init_db, should_alert, record_alert, log_signal
-from telegram_bot import send_telegram_message, format_signal_message
+from telegram_bot import send_engine_signal
+from settings_store import load_settings
 
 logger = get_logger("WORKER")
 
+# Shutdown flag for graceful termination
+_shutdown = threading.Event()
+
+
+def _handle_sigterm(signum, frame):
+    logger.info("Received shutdown signal, stopping worker...")
+    _shutdown.set()
+
+
+signal.signal(signal.SIGTERM, _handle_sigterm)
+signal.signal(signal.SIGINT, _handle_sigterm)
+
 
 def scan_once():
+    settings = load_settings()
+    cooldown = int(settings.get("telegram", {}).get("cooldown_minutes", ALERT_COOLDOWN_MINUTES))
+
     for symbol, ticker in ASSETS.items():
         try:
             result = generate_omega_signal(
@@ -52,20 +70,19 @@ def scan_once():
 
         try:
             if bias in ("BUY", "SELL"):
-                if should_alert(symbol, bias, score):
-                    message = format_signal_message(symbol, result)
-                    if send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message)[0]:
+                if should_alert(symbol, bias, score, cooldown):
+                    ok, info = send_engine_signal(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, symbol, result)
+                    if ok:
                         logger.info("Alert sent: %s %s (score=%s)", symbol, bias, score)
                         try:
                             record_alert(symbol, bias, score)
                         except Exception as e:
                             logger.warning("Failed to record alert state for %s: %s", symbol, e)
                     else:
-                        logger.warning("Telegram send returned failure for %s", symbol)
+                        logger.warning("Telegram send returned failure for %s: %s", symbol, info)
             else:
-                # If the symbol is now neutral, clear last alert state so future signals can re-fire
-                if not should_alert(symbol, bias, score):
-                    # Record neutral as last bias (or remove row). We'll record neutral to indicate cleared state
+                # If the symbol is now neutral, record neutral state so future signals can re-fire
+                if not should_alert(symbol, bias, score, cooldown):
                     try:
                         record_alert(symbol, "NEUTRAL", score)
                     except Exception as e:
@@ -84,16 +101,22 @@ def main():
 
     # Announce startup to Telegram (best-effort)
     try:
-        send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, "🟡 SEKWAILA OMEGA X worker started and monitoring markets.")
+        send_engine_signal(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, "WORKER", {"ok": True, "bias": "NEUTRAL", "score": 0, "grade": "system"})
     except Exception:
         logger.debug("Startup Telegram announcement failed (continuing)")
 
-    while True:
+    while not _shutdown.is_set():
         try:
             scan_once()
         except Exception:
             logger.error("Worker loop error:\n%s", traceback.format_exc())
-        time.sleep(WORKER_POLL_SECONDS)
+        # Wait with early exit if shutdown requested
+        for _ in range(WORKER_POLL_SECONDS):
+            if _shutdown.is_set():
+                break
+            time.sleep(1)
+
+    logger.info("Worker shutdown complete.")
 
 
 if __name__ == "__main__":

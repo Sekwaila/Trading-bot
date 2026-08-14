@@ -1,1 +1,2 @@
-ALERT_COOLDOWN_MINUTES = int(os.getenv("ALERT_COOLDOWN_MINUTES", "30"))
+# Settings file path (local JSON store used by Streamlit UI)
+SETTINGS_PATH = os.getenv("SEKWAILA_SETTINGS_PATH", "sekwaila_settings.json")
